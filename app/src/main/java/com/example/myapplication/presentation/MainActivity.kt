@@ -27,29 +27,16 @@ class MainActivity : ComponentActivity() {
         exerciseClient = HealthServices.getClient(this).exerciseClient
 
         lifecycleScope.launch {
-            checkExerciseCapabilities()
-        }
-    }
+            val capabilities = exerciseClient.getCapabilitiesAsync().await()
 
-    private suspend fun checkExerciseCapabilities() {
-        try {
-            val capabilities: ExerciseCapabilities = exerciseClient.getCapabilitiesAsync().await()
+            val dataTypes = capabilities
+                .getExerciseTypeCapabilities(ExerciseType.RUNNING)
+                .supportedDataTypes
 
-            val supportedExerciseTypes = capabilities.supportedExerciseTypes
-            Log.d("EXERCISE", "✅ 지원되는 운동 타입 목록:")
-            supportedExerciseTypes.forEach { exerciseType ->
-                Log.d("EXERCISE", "• ${exerciseType.name}")
-
-                val typeCapabilities = capabilities.getExerciseTypeCapabilities(exerciseType)
-                val supportedDataTypes = typeCapabilities.supportedDataTypes
-
-                Log.d("EXERCISE", "  └ ${exerciseType.name}에서 측정 가능한 실시간 데이터:")
-                supportedDataTypes.forEach { dataType ->
-                    Log.d("EXERCISE", "    - ${dataType.name}")
-                }
+            Log.d("REALTIME_DATA", "=== 실시간으로 수집 가능한 센서 목록 ===")
+            for (type in dataTypes) {
+                Log.d("REALTIME_DATA", "- ${type.name}")
             }
-        } catch (e: Exception) {
-            Log.e("EXERCISE", "💥 오류 발생: ${e.message}", e)
         }
     }
 }
