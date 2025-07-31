@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -40,6 +40,12 @@ android {
 }
 
 dependencies {
+
+    // Health Services
+    implementation("androidx.health:health-services-client:1.0.0-beta03")
+
+    // coroutines.guava
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.7.1")
 
     implementation(libs.play.services.wearable)
     implementation(platform(libs.compose.bom))

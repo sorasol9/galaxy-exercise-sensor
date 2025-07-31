@@ -6,67 +6,50 @@
 package com.example.myapplication.presentation
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.TimeText
-import androidx.wear.tooling.preview.devices.WearDevices
-import com.example.myapplication.R
-import com.example.myapplication.presentation.theme.MyApplicationTheme
+import androidx.lifecycle.lifecycleScope
+import androidx.health.services.client.HealthServices
+import androidx.health.services.client.ExerciseClient
+import androidx.health.services.client.data.ExerciseCapabilities
+import androidx.health.services.client.data.ExerciseType
+import kotlinx.coroutines.launch
+
+import kotlinx.coroutines.guava.await
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
 
+    private lateinit var exerciseClient: ExerciseClient
+
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setTheme(android.R.style.Theme_DeviceDefault)
+        exerciseClient = HealthServices.getClient(this).exerciseClient
 
-        setContent {
-            WearApp("Android")
+        lifecycleScope.launch {
+            checkExerciseCapabilities()
         }
     }
-}
 
-@Composable
-fun WearApp(greetingName: String) {
-    MyApplicationTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colors.background),
-            contentAlignment = Alignment.Center
-        ) {
-            TimeText()
-            Greeting(greetingName = greetingName)
+    private suspend fun checkExerciseCapabilities() {
+        try {
+            val capabilities: ExerciseCapabilities = exerciseClient.getCapabilitiesAsync().await()
+
+            val supportedExerciseTypes = capabilities.supportedExerciseTypes
+            Log.d("EXERCISE", "✅ 지원되는 운동 타입 목록:")
+            supportedExerciseTypes.forEach { exerciseType ->
+                Log.d("EXERCISE", "• ${exerciseType.name}")
+
+                val typeCapabilities = capabilities.getExerciseTypeCapabilities(exerciseType)
+                val supportedDataTypes = typeCapabilities.supportedDataTypes
+
+                Log.d("EXERCISE", "  └ ${exerciseType.name}에서 측정 가능한 실시간 데이터:")
+                supportedDataTypes.forEach { dataType ->
+                    Log.d("EXERCISE", "    - ${dataType.name}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("EXERCISE", "💥 오류 발생: ${e.message}", e)
         }
     }
-}
-
-@Composable
-fun Greeting(greetingName: String) {
-    Text(
-        modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        text = stringResource(R.string.hello_world, greetingName)
-    )
-}
-
-@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
-@Composable
-fun DefaultPreview() {
-    WearApp("Preview Android")
 }
